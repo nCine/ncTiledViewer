@@ -13,9 +13,10 @@ class Texture;
 class Sprite;
 class MeshSprite;
 class AnimatedSprite;
-class SceneNode;
 
 }
+
+class CameraNode;
 
 namespace nc = ncine;
 
@@ -31,8 +32,20 @@ class MyEventHandler :
 
 	void onKeyReleased(const nc::KeyboardEvent &event) override;
 
+	void onTouchDown(const nc::TouchEvent &event) override;
+	void onTouchMove(const nc::TouchEvent &event) override;
+	void onPointerDown(const nc::TouchEvent &event) override;
+
+	void onMouseButtonPressed(const nc::MouseEvent &event) override;
+	void onMouseMoved(const nc::MouseState &state) override;
+	void onScrollInput(const nc::ScrollEvent &event) override;
+
+	void onJoyMappedAxisMoved(const nc::JoyMappedAxisEvent &event) override;
+	void onJoyMappedButtonReleased(const nc::JoyMappedButtonEvent &event) override;
+	void onJoyDisconnected(const nc::JoyConnectionEvent &event) override;
+
   private:
-	nctl::UniquePtr<nc::SceneNode> parent_;
+	nctl::UniquePtr<CameraNode> camera_;
 	nctl::Array<nctl::UniquePtr<nc::Texture>> textures_;
 	nctl::Array<nctl::UniquePtr<nc::Sprite>> sprites_;
 	nctl::Array<nctl::UniquePtr<nc::MeshSprite>> meshSprites_;

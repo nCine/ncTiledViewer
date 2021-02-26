@@ -14,24 +14,26 @@ set(PACKAGE_SOURCES
 	include/TmxParser.h
 	include/MapFactory.h
 	include/FileDialog.h
+	include/CameraNode.h
 
 	src/main.cpp
 	src/TmxParser.cpp
 	src/MapFactory.cpp
 	src/FileDialog.cpp
+	src/CameraNode.cpp
 )
 
 function(callback_after_target)
-	if(NOT CMAKE_SYSTEM_NAME STREQUAL "Android")
-		include(custom_pugixml)
+	include(custom_pugixml)
 
+	if(NOT CMAKE_SYSTEM_NAME STREQUAL "Android")
 		if(IS_DIRECTORY ${PACKAGE_DATA_DIR})
-			file(GLOB MAP_FILES "${PACKAGE_DATA_DIR}/data/maps/*.[tmx,tsx,png]")
+			file(GLOB MAP_FILES "${PACKAGE_DATA_DIR}/data/maps/*[.tmx,.tsx,.png]")
 		endif()
 		set(PACKAGE_ANDROID_ASSETS ${MAP_FILES} CACHE STRING "" FORCE)
 	else()
-		target_include_directories(${PACKAGE_EXE_NAME} PRIVATE ${GENERATED_INCLUDE_DIR}/../../pugixml-src/src)
-		target_sources(${PACKAGE_EXE_NAME} PRIVATE ${GENERATED_INCLUDE_DIR}/../../pugixml-src/src/pugixml.cpp)
+		target_include_directories(${PACKAGE_EXE_NAME} PRIVATE ${GENERATED_INCLUDE_DIR}/../../${PUGIXML_SOURCE_DIR_NAME}/src)
+		target_sources(${PACKAGE_EXE_NAME} PRIVATE ${GENERATED_INCLUDE_DIR}/../../${PUGIXML_SOURCE_DIR_NAME}/src/pugixml.cpp)
 		target_compile_definitions(${PACKAGE_EXE_NAME} PRIVATE "PUGIXML_NO_XPATH" "PUGIXML_NO_STL" "PUGIXML_NO_EXCEPTIONS")
 	endif()
 endfunction()

@@ -16,6 +16,7 @@
 #include "TmxParser.h"
 #include "MapFactory.h"
 #include "FileDialog.h"
+#include "CameraNode.h"
 
 namespace {
 
@@ -333,6 +334,7 @@ bool loadMap(MapFactory::Configuration &mapConfig, MapModel &mapModel, const cha
 MapModel mapModel;
 MapFactory::Configuration mapConfig;
 bool showInterface = true;
+bool withVSync = true;
 }
 
 nctl::UniquePtr<nc::IAppEventHandler> createAppEventHandler()
@@ -357,6 +359,7 @@ void MyEventHandler::onPreInit(nc::AppConfiguration &config)
 	config.windowTitle = "ncTiledViewer";
 	config.windowIconFilename = "icon48.png";
 	config.consoleLogLevel = nc::ILogger::LogLevel::INFO;
+	withVSync = config.withVSync;
 }
 
 void MyEventHandler::onInit()
@@ -366,12 +369,13 @@ void MyEventHandler::onInit()
 	io.FontGlobalScale = 2.0f;
 #endif
 
-	parent_ = nctl::makeUnique<nc::SceneNode>(&nc::theApplication().rootNode());
+	camera_ = nctl::makeUnique<CameraNode>(&nc::theApplication().rootNode());
+	nc::theApplication().inputManager().setHandler(this);
 	mapConfig.textures = &textures_;
 	mapConfig.sprites = &sprites_;
 	mapConfig.meshSprites = &meshSprites_;
 	mapConfig.animSprites = &animSprites_;
-	mapConfig.parent = parent_.get();
+	mapConfig.parent = camera_.get();
 
 	const nctl::String MapsPath = nc::fs::joinPath(nc::fs::dataPath(), "maps");
 	const nctl::String StartupFile = nc::fs::joinPath(MapsPath, "orthogonal-outside.tmx");
@@ -383,9 +387,18 @@ void MyEventHandler::onInit()
 
 void MyEventHandler::onFrameStart()
 {
-	static nctl::String fileSelection(nc::fs::MaxPathLength);
+	static bool drawOverlay = true;
+
+	CameraNode *camera = reinterpret_cast<CameraNode *>(mapConfig.parent);
+	if (drawOverlay)
+	{
+		for (unsigned int i = 0; i < mapModel.map().objectGroups.size(); i++)
+			MapFactory::drawObjectsWithImGui(*camera, mapModel, i);
+	}
+
 	const MapModel::Map &map = mapModel.map();
 
+	static nctl::String fileSelection(nc::fs::MaxPathLength);
 	if (FileDialog::create(FileDialog::config, fileSelection))
 		loadMap(mapConfig, mapModel, fileSelection.data());
 
@@ -402,11 +415,65 @@ void MyEventHandler::onFrameStart()
 			FileDialog::config.modalPopup = true;
 			FileDialog::config.windowOpen = true;
 		}
+		ImGui::Separator();
+
+		nc::Application::RenderingSettings &renderingSettings = nc::theApplication().renderingSettings();
+		ImGui::Checkbox("Batching", &renderingSettings.batchingEnabled);
+		ImGui::SameLine();
+		ImGui::Checkbox("Culling", &renderingSettings.cullingEnabled);
+		ImGui::SameLine();
+#ifdef __ANDROID__
+		ImGui::Text("VSync: true");
+#else
+		ImGui::Checkbox("VSync", &withVSync);
+		nc::theApplication().gfxDevice().setSwapInterval(withVSync ? 1 : 0);
+#endif
+		ImGui::Text("FPS: %.2f (%.2f ms)", 1.0f / nc::theApplication().interval(), nc::theApplication().interval() * 1000.0f);
+		ImGui::Separator();
+
+		nc::Vector2f position = camera->position();
+		ImGui::InputFloat2("Position", position.data());
+		camera->setPosition(position);
+		ImGui::SameLine();
+		if (ImGui::Button("Reset##Position"))
+			camera->setPosition(nc::theApplication().width() * 0.5f, nc::theApplication().height() * 0.5f);
+		float scale = camera->scale().x;
+		ImGui::SliderFloat("Scale", &scale, camera->minCameraScale(), camera->maxCameraScale());
+		camera->setScale(scale);
+		ImGui::SameLine();
+		if (ImGui::Button("Reset##Scale"))
+			camera->setScale(1.0f);
+		float rotation = camera->rotation();
+		ImGui::SliderFloat("Rotation", &rotation, 0.0f, 360.0f);
+		camera->setRotation(rotation);
+		ImGui::SameLine();
+		if (ImGui::Button("Reset##Rotation"))
+			camera->setRotation(0.0f);
+
+		if (ImGui::Button("Reset All##Camera"))
+			camera->reset();
+
+		ImGui::SameLine();
+		bool ignoreEvents = camera->isIgnoringEvents();
+		ImGui::Checkbox("Ignore Events", &ignoreEvents);
+		camera->setIgnoreEvents(ignoreEvents);
+
+		ImGui::SameLine();
+		bool snapMovement = camera->isSnappingMovement();
+		ImGui::Checkbox("Snap Movement", &snapMovement);
+		camera->setSnapMovement(snapMovement);
+		ImGui::Separator();
 
 		for (unsigned int i = 0; i < mapConfig.parent->children().size(); i++)
 		{
 			nc::SceneNode *child = mapConfig.parent->children()[i];
-			ImGui::Text("#%d - %s (%u children)", i, child->name().data(), child->children().size());
+			if (child->type() == nc::Object::ObjectType::MESH_SPRITE)
+			{
+				const nc::MeshSprite *meshSprite = static_cast<const nc::MeshSprite *>(child);
+				ImGui::Text("#%d - %s (%u vertices)", i, child->name().data(), meshSprite->numVertices());
+			}
+			else
+				ImGui::Text("#%d - %s (%u children)", i, child->name().data(), child->children().size());
 			ImGui::Indent();
 			ImGui::PushID(child);
 			bool isEnabled = child->isEnabled();
@@ -432,13 +499,7 @@ void MyEventHandler::onFrameStart()
 
 			ImGui::TreePop();
 		}
-		static bool drawOverlay = true;
 		ImGui::Checkbox("Draw Overlay", &drawOverlay);
-		if (drawOverlay)
-		{
-			for (unsigned int i = 0; i < mapModel.map().objectGroups.size(); i++)
-				MapFactory::drawObjectsWithImGui(mapModel, i);
-		}
 		ImGui::Separator();
 
 		if (ImGui::CollapsingHeader("Map Model"))
@@ -779,8 +840,72 @@ void MyEventHandler::onKeyReleased(const nc::KeyboardEvent &event)
 
 	if (event.sym == nc::KeySym::B)
 		renderingSettings.batchingEnabled = !renderingSettings.batchingEnabled;
+	else if (event.sym == nc::KeySym::C)
+		renderingSettings.cullingEnabled = !renderingSettings.cullingEnabled;
 	else if (event.sym == nc::KeySym::H)
 		showInterface = !showInterface;
 	else if (event.sym == nc::KeySym::ESCAPE)
 		FileDialog::config.windowOpen = false;
+}
+
+void MyEventHandler::onTouchDown(const nc::TouchEvent &event)
+{
+	camera_->onTouchDown(event);
+}
+
+void MyEventHandler::onTouchMove(const nc::TouchEvent &event)
+{
+	camera_->onTouchMove(event);
+}
+
+void MyEventHandler::onPointerDown(const nc::TouchEvent &event)
+{
+	camera_->onPointerDown(event);
+}
+
+void MyEventHandler::onMouseButtonPressed(const nc::MouseEvent &event)
+{
+	camera_->onMouseButtonPressed(event);
+}
+
+void MyEventHandler::onMouseMoved(const nc::MouseState &state)
+{
+	camera_->onMouseMoved(state);
+}
+
+void MyEventHandler::onScrollInput(const nc::ScrollEvent &event)
+{
+	camera_->onScrollInput(event);
+}
+
+void MyEventHandler::onJoyMappedAxisMoved(const nc::JoyMappedAxisEvent &event)
+{
+	camera_->onJoyMappedAxisMoved(event);
+}
+
+void MyEventHandler::onJoyMappedButtonReleased(const nc::JoyMappedButtonEvent &event)
+{
+	nc::Application::RenderingSettings &renderingSettings = nc::theApplication().renderingSettings();
+	nc::IDebugOverlay::DisplaySettings &overlaySettings = nc::theApplication().debugOverlaySettings();
+
+	if (event.buttonName == nc::ButtonName::A)
+		renderingSettings.batchingEnabled = !renderingSettings.batchingEnabled;
+	else if (event.buttonName == nc::ButtonName::Y)
+		renderingSettings.cullingEnabled = !renderingSettings.cullingEnabled;
+	else if (event.buttonName == nc::ButtonName::BACK)
+	{
+		overlaySettings.showProfilerGraphs = !overlaySettings.showProfilerGraphs;
+		overlaySettings.showInfoText = !overlaySettings.showInfoText;
+	}
+	else if (event.buttonName == nc::ButtonName::START)
+		showInterface = !showInterface;
+	else if (event.buttonName == nc::ButtonName::GUIDE)
+		nc::theApplication().quit();
+
+	camera_->onJoyMappedButtonReleased(event);
+}
+
+void MyEventHandler::onJoyDisconnected(const nc::JoyConnectionEvent &event)
+{
+	camera_->onJoyDisconnected(event);
 }
