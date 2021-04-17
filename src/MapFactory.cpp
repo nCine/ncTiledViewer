@@ -419,7 +419,7 @@ bool MapFactory::drawObjectsWithImGui(const nc::SceneNode &node, const MapModel 
 			{
 				const ImVec2 min = transform(ImVec2(origin.x, origin.y), matrix);
 				const ImVec2 max = transform(ImVec2(origin.x + object.width, origin.y + object.height), matrix);
-				drawList->AddRect(min, max, color, ImDrawCornerFlags_None, thickness);
+				drawList->AddRect(min, max, color, 0.0f, ImDrawFlags_RoundCornersNone, thickness);
 			}
 			else
 			{
