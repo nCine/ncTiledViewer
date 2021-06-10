@@ -29,6 +29,7 @@ class MyEventHandler :
 	void onPreInit(nc::AppConfiguration &config) override;
 	void onInit() override;
 	void onFrameStart() override;
+	void onPostUpdate() override;
 
 	void onKeyReleased(const nc::KeyboardEvent &event) override;
 

@@ -335,6 +335,7 @@ MapModel mapModel;
 MapFactory::Configuration mapConfig;
 bool showInterface = true;
 bool withVSync = true;
+bool drawOverlay = true;
 }
 
 nctl::UniquePtr<nc::IAppEventHandler> createAppEventHandler()
@@ -387,15 +388,6 @@ void MyEventHandler::onInit()
 
 void MyEventHandler::onFrameStart()
 {
-	static bool drawOverlay = true;
-
-	CameraNode *camera = reinterpret_cast<CameraNode *>(mapConfig.parent);
-	if (drawOverlay)
-	{
-		for (unsigned int i = 0; i < mapModel.map().objectGroups.size(); i++)
-			MapFactory::drawObjectsWithImGui(*camera, mapModel, i);
-	}
-
 	const MapModel::Map &map = mapModel.map();
 
 	static nctl::String fileSelection(nc::fs::MaxPathLength);
@@ -431,6 +423,7 @@ void MyEventHandler::onFrameStart()
 		ImGui::Text("FPS: %.2f (%.2f ms)", 1.0f / nc::theApplication().interval(), nc::theApplication().interval() * 1000.0f);
 		ImGui::Separator();
 
+		CameraNode *camera = reinterpret_cast<CameraNode *>(mapConfig.parent);
 		nc::Vector2f position = camera->position();
 		ImGui::InputFloat2("Position", position.data());
 		camera->setPosition(position);
@@ -828,6 +821,16 @@ void MyEventHandler::onFrameStart()
 			}
 		}
 		ImGui::End();
+	}
+}
+
+void MyEventHandler::onPostUpdate()
+{
+	if (drawOverlay)
+	{
+		CameraNode *camera = reinterpret_cast<CameraNode *>(mapConfig.parent);
+		for (unsigned int i = 0; i < mapModel.map().objectGroups.size(); i++)
+			MapFactory::drawObjectsWithImGui(*camera, mapModel, i);
 	}
 }
 
