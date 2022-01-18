@@ -5,6 +5,7 @@
 
 namespace ncine {
 
+class Camera;
 class Texture;
 class Sprite;
 class MeshSprite;
@@ -79,7 +80,7 @@ class MapFactory
 	static const unsigned int MaxOverlayPoints = 64;
 
 	static bool instantiate(const MapModel &mapModel, const Configuration &config);
-	static bool drawObjectsWithImGui(const ncine::SceneNode &node, const MapModel &mapModel, unsigned int objectGroupIdx);
+	static bool drawObjectsWithImGui(const ncine::Camera &camera, const MapModel &mapModel, unsigned int objectGroupIdx);
 };
 
 #endif

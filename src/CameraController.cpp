@@ -1,9 +1,10 @@
-#include "CameraNode.h"
+#include "CameraController.h"
 #include <ncine/IInputManager.h>
+#include <ncine/Camera.h>
 #include <ncine/Application.h>
 
-CameraNode::CameraNode(SceneNode *parent)
-    : nc::SceneNode(parent), ignoreEvents_(false), snapMovement_(true),
+CameraController::CameraController()
+    : ignoreEvents_(false), snapMovement_(true),
       moveSpeed_(500.0f), rotateSpeed_(50.0f), scaleSpeed_(0.5f),
       maxCameraScale_(4.0f), minCameraScale_(0.25f)
 {
@@ -17,86 +18,86 @@ CameraNode::CameraNode(SceneNode *parent)
 	joyVectorRight_ = nc::Vector2f::Zero;
 }
 
-void CameraNode::update(float interval)
+void CameraController::update(float interval)
 {
 	if (ignoreEvents_)
 	{
-		nc::SceneNode::update(interval);
+		camera_.setView(viewValues_);
 		return;
 	}
 
 	const nc::KeyboardState &keyState = nc::theApplication().inputManager().keyboardState();
 	if (keyState.isKeyDown(nc::KeySym::D))
-		x -= moveSpeed_ * interval;
+		viewValues_.position.x -= moveSpeed_ * interval;
 	else if (keyState.isKeyDown(nc::KeySym::A))
-		x += moveSpeed_ * interval;
+		viewValues_.position.x += moveSpeed_ * interval;
 	if (keyState.isKeyDown(nc::KeySym::W))
-		y -= moveSpeed_ * interval;
+		viewValues_.position.y -= moveSpeed_ * interval;
 	else if (keyState.isKeyDown(nc::KeySym::S))
-		y += moveSpeed_ * interval;
+		viewValues_.position.y += moveSpeed_ * interval;
 
 	if (keyState.isKeyDown(nc::KeySym::RIGHT))
-		rotation_ += rotateSpeed_ * interval;
+		viewValues_.rotation += rotateSpeed_ * interval;
 	else if (keyState.isKeyDown(nc::KeySym::LEFT))
-		rotation_ -= rotateSpeed_ * interval;
+		viewValues_.rotation -= rotateSpeed_ * interval;
 
 	if (keyState.isKeyDown(nc::KeySym::UP))
-		scaleFactor_ += scaleSpeed_ * interval;
+		viewValues_.scale += scaleSpeed_ * interval;
 	else if (keyState.isKeyDown(nc::KeySym::DOWN))
-		scaleFactor_ -= scaleSpeed_ * interval;
+		viewValues_.scale -= scaleSpeed_ * interval;
 
 	if (joyVectorLeft_.length() > nc::IInputManager::LeftStickDeadZone)
 	{
-		x -= joyVectorLeft_.x * moveSpeed_ * interval;
-		y -= joyVectorLeft_.y * moveSpeed_ * interval;
+		viewValues_.position.x -= joyVectorLeft_.x * moveSpeed_ * interval;
+		viewValues_.position.y -= joyVectorLeft_.y * moveSpeed_ * interval;
 	}
 	if (joyVectorRight_.length() > nc::IInputManager::RightStickDeadZone)
 	{
-		rotation_ += joyVectorRight_.x * rotateSpeed_ * interval;
-		scaleFactor_ += joyVectorRight_.y * scaleSpeed_ * interval;
+		viewValues_.rotation += joyVectorRight_.x * rotateSpeed_ * interval;
+		viewValues_.scale += joyVectorRight_.y * scaleSpeed_ * interval;
 	}
 
 	const nc::Vector2f scrollDiff = scrollMove_ - scrollOrigin_;
 	if (scrollDiff.sqrLength() > 2.0f)
 	{
-		x += scrollDiff.x;
-		y += scrollDiff.y;
+		viewValues_.position.x += scrollDiff.x;
+		viewValues_.position.y += scrollDiff.y;
 		scrollOrigin_ = scrollMove_;
 	}
 	const nc::Vector2f scrollDiff2 = scrollMove2_ - scrollOrigin2_;
 	if (scrollDiff2.sqrLength() > 2.0f)
 	{
-		rotation_ += scrollDiff2.x * 0.1f;
-		scaleFactor_ += scrollDiff2.y * 0.001f;
+		viewValues_.rotation += scrollDiff2.x * 0.1f;
+		viewValues_.scale += scrollDiff2.y * 0.001f;
 		scrollOrigin2_ = scrollMove2_;
 	}
 
-	if (scaleFactor_.x > maxCameraScale_)
-		scaleFactor_.set(maxCameraScale_, maxCameraScale_);
-	else if (scaleFactor_.x < minCameraScale_)
-		scaleFactor_.set(minCameraScale_, minCameraScale_);
+	if (viewValues_.scale > maxCameraScale_)
+		viewValues_.scale = maxCameraScale_;
+	else if (viewValues_.scale < minCameraScale_)
+		viewValues_.scale = minCameraScale_;
 
-	if (rotation_ > 0.01f || rotation_ < -0.01f)
-		rotation_ = fmodf(rotation_, 360.0f);
+	if (viewValues_.rotation > 0.01f || viewValues_.rotation < -0.01f)
+		viewValues_.rotation = fmodf(viewValues_.rotation, 360.0f);
 
 	if (snapMovement_)
 	{
-		x = roundf(x);
-		y = roundf(y);
+		viewValues_.position.x = roundf(viewValues_.position.x);
+		viewValues_.position.y = roundf(viewValues_.position.y);
 	}
 
-	nc::SceneNode::update(interval);
+	camera_.setView(viewValues_);
 }
 
-void CameraNode::reset()
+void CameraController::reset()
 {
-	x = nc::theApplication().width() * 0.5f;
-	y = nc::theApplication().height() * 0.5f;
-	rotation_ = 0.0f;
-	scaleFactor_.set(1.0f, 1.0f);
+	viewValues_.position.x = nc::theApplication().width() * 0.5f;
+	viewValues_.position.y = nc::theApplication().height() * 0.5f;
+	viewValues_.rotation = 0.0f;
+	viewValues_.scale = 1.0f;
 }
 
-void CameraNode::onTouchDown(const nc::TouchEvent &event)
+void CameraController::onTouchDown(const nc::TouchEvent &event)
 {
 	if (ignoreEvents_)
 		return;
@@ -106,7 +107,7 @@ void CameraNode::onTouchDown(const nc::TouchEvent &event)
 	scrollMove_ = scrollOrigin_;
 }
 
-void CameraNode::onTouchMove(const nc::TouchEvent &event)
+void CameraController::onTouchMove(const nc::TouchEvent &event)
 {
 	if (ignoreEvents_)
 		return;
@@ -121,7 +122,7 @@ void CameraNode::onTouchMove(const nc::TouchEvent &event)
 	}
 }
 
-void CameraNode::onPointerDown(const nc::TouchEvent &event)
+void CameraController::onPointerDown(const nc::TouchEvent &event)
 {
 	if (ignoreEvents_)
 		return;
@@ -134,7 +135,7 @@ void CameraNode::onPointerDown(const nc::TouchEvent &event)
 	}
 }
 
-void CameraNode::onMouseButtonPressed(const nc::MouseEvent &event)
+void CameraController::onMouseButtonPressed(const nc::MouseEvent &event)
 {
 	if (ignoreEvents_)
 		return;
@@ -153,7 +154,7 @@ void CameraNode::onMouseButtonPressed(const nc::MouseEvent &event)
 	}
 }
 
-void CameraNode::onMouseMoved(const nc::MouseState &state)
+void CameraController::onMouseMoved(const nc::MouseState &state)
 {
 	if (ignoreEvents_)
 		return;
@@ -170,35 +171,35 @@ void CameraNode::onMouseMoved(const nc::MouseState &state)
 	}
 }
 
-void CameraNode::onScrollInput(const nc::ScrollEvent &event)
+void CameraController::onScrollInput(const nc::ScrollEvent &event)
 {
 	if (ignoreEvents_)
 		return;
 
-	rotation_ += 10.0f * event.x;
-	scaleFactor_ += 0.1f * event.y;
+	viewValues_.rotation += 10.0f * event.x;
+	viewValues_.scale += 0.1f * event.y;
 }
 
-void CameraNode::onJoyMappedButtonReleased(const nc::JoyMappedButtonEvent &event)
+void CameraController::onJoyMappedButtonReleased(const nc::JoyMappedButtonEvent &event)
 {
 	if (ignoreEvents_)
 		return;
 
 	if (event.buttonName == nc::ButtonName::LSTICK)
 	{
-		x = nc::theApplication().width() * 0.5f;
-		y = nc::theApplication().height() * 0.5f;
+		viewValues_.position.x = nc::theApplication().width() * 0.5f;
+		viewValues_.position.y = nc::theApplication().height() * 0.5f;
 	}
 	else if (event.buttonName == nc::ButtonName::RSTICK)
 	{
-		rotation_ = 0.0f;
-		scaleFactor_.set(1.0f, 1.0f);
+		viewValues_.rotation = 0.0f;
+		viewValues_.scale = 1.0f;
 	}
 	else if (event.buttonName == nc::ButtonName::B)
 		reset();
 }
 
-void CameraNode::onJoyMappedAxisMoved(const nc::JoyMappedAxisEvent &event)
+void CameraController::onJoyMappedAxisMoved(const nc::JoyMappedAxisEvent &event)
 {
 	if (ignoreEvents_)
 		return;
@@ -214,7 +215,7 @@ void CameraNode::onJoyMappedAxisMoved(const nc::JoyMappedAxisEvent &event)
 		joyVectorRight_.y = -event.value;
 }
 
-void CameraNode::onJoyDisconnected(const nc::JoyConnectionEvent &event)
+void CameraController::onJoyDisconnected(const nc::JoyConnectionEvent &event)
 {
 	joyVectorLeft_ = nc::Vector2f::Zero;
 	joyVectorRight_ = nc::Vector2f::Zero;

@@ -1,5 +1,6 @@
 #include <cstdio>
 #include <ncine/imgui.h>
+#include <ncine/Camera.h>
 #include <ncine/Sprite.h>
 #include <ncine/MeshSprite.h>
 #include <ncine/AnimatedSprite.h>
@@ -367,7 +368,7 @@ bool MapFactory::instantiate(const MapModel &mapModel, const Configuration &conf
 	return true;
 }
 
-bool MapFactory::drawObjectsWithImGui(const nc::SceneNode &node, const MapModel &mapModel, unsigned int objectGroupIdx)
+bool MapFactory::drawObjectsWithImGui(const nc::Camera &camera, const MapModel &mapModel, unsigned int objectGroupIdx)
 {
 	if (objectGroupIdx > mapModel.map().objectGroups.size() - 1)
 		return false;
@@ -389,18 +390,20 @@ bool MapFactory::drawObjectsWithImGui(const nc::SceneNode &node, const MapModel 
 	if (hasObjectToDraw == false)
 		return false;
 
-	const bool onlyTranslation = (node.absScale().x == 1.0f && node.absScale().y == 1.0f && node.absRotation() == 0.0f);
+	const nc::Camera::ViewValues viewValues = camera.viewValues();
+	const bool onlyTranslation = (viewValues.rotation == 0.0f && viewValues.scale == 1.0f);
 
 	const float diffX = mapModel.map().width * mapModel.map().tileWidth * 0.5f;
 	const float diffY = mapModel.map().height * mapModel.map().tileHeight * 0.5f;
 
 	nc::Matrix4x4f matrix = nc::Matrix4x4f::translation(0.0f, -nc::theApplication().height(), 0.0f);
-	matrix *= node.worldMatrix();
+	matrix *= camera.view();
 	matrix.translate(-diffX, diffY, 0.0f);
 
 	ImGui::SetNextWindowPos(ImVec2(0.0f, 0.0f), ImGuiCond_Always);
 	ImGui::SetNextWindowSize(ImVec2(ImGui::GetIO().DisplaySize.x, ImGui::GetIO().DisplaySize.y), ImGuiCond_Always);
-	ImGui::Begin("screen", nullptr, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoInputs);
+	ImGui::Begin("screen", nullptr, ImGuiWindowFlags_NoBackground | ImGuiWindowFlags_NoNav | ImGuiWindowFlags_NoDecoration |
+	             ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_NoBringToFrontOnFocus);
 	ImDrawList *drawList = ImGui::GetWindowDrawList();
 
 	const ImU32 color = nc::Color(255, 255, 255, 200).abgr();
@@ -435,7 +438,7 @@ bool MapFactory::drawObjectsWithImGui(const nc::SceneNode &node, const MapModel 
 		else if (object.objectType == MapModel::ObjectType::Ellipse)
 		{
 			const ImVec2 transformed = transform(ImVec2(origin.x + object.width / 2, origin.y + object.height / 2), matrix);
-			const float radius = object.height * 0.5f * node.absScale().y;
+			const float radius = object.height * 0.5f * viewValues.scale;
 			drawList->AddCircle(transformed, radius, color, 32, thickness);
 		}
 		else if (object.objectType == MapModel::ObjectType::Point)

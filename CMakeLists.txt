@@ -1,7 +1,7 @@
 set(NCPROJECT_NAME "ncTiledViewer")
 set(NCPROJECT_EXE_NAME "nctiledviewer")
 set(NCPROJECT_VENDOR "Angelo Theodorou")
-set(NCPROJECT_COPYRIGHT "Copyright ©2020-2021 ${NCPROJECT_VENDOR}")
+set(NCPROJECT_COPYRIGHT "Copyright ©2020-2022 ${NCPROJECT_VENDOR}")
 set(NCPROJECT_DESCRIPTION "A viewer for Tiled maps made with the nCine")
 set(NCPROJECT_HOMEPAGE "https://ncine.github.io")
 set(NCPROJECT_REVERSE_DNS "io.github.ncine.nctiledviewer")
@@ -14,13 +14,13 @@ set(NCPROJECT_SOURCES
 	include/TmxParser.h
 	include/MapFactory.h
 	include/FileDialog.h
-	include/CameraNode.h
+	include/CameraController.h
 
 	src/main.cpp
 	src/TmxParser.cpp
 	src/MapFactory.cpp
 	src/FileDialog.cpp
-	src/CameraNode.cpp
+	src/CameraController.cpp
 )
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")

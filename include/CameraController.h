@@ -1,20 +1,21 @@
-#ifndef CLASS_CAMERANODE
-#define CLASS_CAMERANODE
+#ifndef CLASS_CAMERACONTROLLER
+#define CLASS_CAMERACONTROLLER
 
 #include <ncine/IInputEventHandler.h>
-#include <ncine/SceneNode.h>
+#include <ncine/Camera.h>
 
 namespace nc = ncine;
 
-/// My nCine event handler
-class CameraNode :
-    public nc::SceneNode,
+// TODO: RENAME CLASS
+
+/// A controller class for the camera
+class CameraController :
     public nc::IInputEventHandler
 {
   public:
-	explicit CameraNode(SceneNode *parent);
+	CameraController();
 
-	void update(float interval) override;
+	void update(float interval);
 	void reset();
 
 	inline bool isIgnoringEvents() const { return ignoreEvents_; }
@@ -38,6 +39,9 @@ class CameraNode :
 	void onJoyMappedAxisMoved(const nc::JoyMappedAxisEvent &event) override;
 	void onJoyDisconnected(const nc::JoyConnectionEvent &event) override;
 
+	nc::Camera &camera() { return camera_; }
+	nc::Camera::ViewValues &viewValues() { return viewValues_; }
+
   private:
 	bool ignoreEvents_;
 	bool snapMovement_;
@@ -55,6 +59,9 @@ class CameraNode :
 	nc::Vector2f scrollMove2_;
 	nc::Vector2f joyVectorLeft_;
 	nc::Vector2f joyVectorRight_;
+
+	nc::Camera camera_;
+	nc::Camera::ViewValues viewValues_;
 };
 
 #endif

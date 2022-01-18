@@ -10,13 +10,14 @@ namespace ncine {
 
 class AppConfiguration;
 class Texture;
+class SceneNode;
 class Sprite;
 class MeshSprite;
 class AnimatedSprite;
 
 }
 
-class CameraNode;
+class CameraController;
 
 namespace nc = ncine;
 
@@ -46,7 +47,8 @@ class MyEventHandler :
 	void onJoyDisconnected(const nc::JoyConnectionEvent &event) override;
 
   private:
-	nctl::UniquePtr<CameraNode> camera_;
+	nctl::UniquePtr<CameraController> cameraCtrl_;
+	nctl::UniquePtr<nc::SceneNode> parent_;
 	nctl::Array<nctl::UniquePtr<nc::Texture>> textures_;
 	nctl::Array<nctl::UniquePtr<nc::Sprite>> sprites_;
 	nctl::Array<nctl::UniquePtr<nc::MeshSprite>> meshSprites_;

@@ -4,6 +4,7 @@
 #include <ncine/Application.h>
 #include <ncine/AppConfiguration.h>
 #include <ncine/Colorf.h>
+#include <ncine/Viewport.h>
 #include <ncine/Texture.h>
 #include <ncine/SceneNode.h>
 #include <ncine/TimeStamp.h>
@@ -16,7 +17,7 @@
 #include "TmxParser.h"
 #include "MapFactory.h"
 #include "FileDialog.h"
-#include "CameraNode.h"
+#include "CameraController.h"
 
 namespace {
 
@@ -370,13 +371,15 @@ void MyEventHandler::onInit()
 	io.FontGlobalScale = 2.0f;
 #endif
 
-	camera_ = nctl::makeUnique<CameraNode>(&nc::theApplication().rootNode());
+	cameraCtrl_ = nctl::makeUnique<CameraController>();
+	nc::theApplication().rootViewport().setCamera(&cameraCtrl_->camera());
+	parent_ = nctl::makeUnique<nc::SceneNode>(&nc::theApplication().rootNode());
 	nc::theApplication().inputManager().setHandler(this);
 	mapConfig.textures = &textures_;
 	mapConfig.sprites = &sprites_;
 	mapConfig.meshSprites = &meshSprites_;
 	mapConfig.animSprites = &animSprites_;
-	mapConfig.parent = camera_.get();
+	mapConfig.parent = parent_.get();
 
 	const nctl::String MapsPath = nc::fs::joinPath(nc::fs::dataPath(), "maps");
 	const nctl::String StartupFile = nc::fs::joinPath(MapsPath, "orthogonal-outside.tmx");
@@ -388,6 +391,7 @@ void MyEventHandler::onInit()
 
 void MyEventHandler::onFrameStart()
 {
+	const float interval = nc::theApplication().interval();
 	const MapModel::Map &map = mapModel.map();
 
 	static nctl::String fileSelection(nc::fs::MaxPathLength);
@@ -420,41 +424,35 @@ void MyEventHandler::onFrameStart()
 		ImGui::Checkbox("VSync", &withVSync);
 		nc::theApplication().gfxDevice().setSwapInterval(withVSync ? 1 : 0);
 #endif
-		ImGui::Text("FPS: %.2f (%.2f ms)", 1.0f / nc::theApplication().interval(), nc::theApplication().interval() * 1000.0f);
+		ImGui::Text("FPS: %.2f (%.2f ms)", 1.0f / interval, interval * 1000.0f);
 		ImGui::Separator();
 
-		CameraNode *camera = reinterpret_cast<CameraNode *>(mapConfig.parent);
-		nc::Vector2f position = camera->position();
-		ImGui::InputFloat2("Position", position.data());
-		camera->setPosition(position);
+		nc::Camera::ViewValues &viewValues = cameraCtrl_->viewValues();
+		ImGui::InputFloat2("Position", viewValues.position.data());
 		ImGui::SameLine();
 		if (ImGui::Button("Reset##Position"))
-			camera->setPosition(nc::theApplication().width() * 0.5f, nc::theApplication().height() * 0.5f);
-		float scale = camera->scale().x;
-		ImGui::SliderFloat("Scale", &scale, camera->minCameraScale(), camera->maxCameraScale());
-		camera->setScale(scale);
+			viewValues.position.set(nc::theApplication().width() * 0.5f, nc::theApplication().height() * 0.5f);
+		ImGui::SliderFloat("Scale", &viewValues.scale, cameraCtrl_->minCameraScale(), cameraCtrl_->maxCameraScale());
 		ImGui::SameLine();
 		if (ImGui::Button("Reset##Scale"))
-			camera->setScale(1.0f);
-		float rotation = camera->rotation();
-		ImGui::SliderFloat("Rotation", &rotation, 0.0f, 360.0f);
-		camera->setRotation(rotation);
+			viewValues.scale = 1.0f;
+		ImGui::SliderFloat("Rotation", &viewValues.rotation, 0.0f, 360.0f);
 		ImGui::SameLine();
 		if (ImGui::Button("Reset##Rotation"))
-			camera->setRotation(0.0f);
+			viewValues.rotation = 0.0f;
 
 		if (ImGui::Button("Reset All##Camera"))
-			camera->reset();
+			cameraCtrl_->reset();
 
 		ImGui::SameLine();
-		bool ignoreEvents = camera->isIgnoringEvents();
+		bool ignoreEvents = cameraCtrl_->isIgnoringEvents();
 		ImGui::Checkbox("Ignore Events", &ignoreEvents);
-		camera->setIgnoreEvents(ignoreEvents);
+		cameraCtrl_->setIgnoreEvents(ignoreEvents);
 
 		ImGui::SameLine();
-		bool snapMovement = camera->isSnappingMovement();
+		bool snapMovement = cameraCtrl_->isSnappingMovement();
 		ImGui::Checkbox("Snap Movement", &snapMovement);
-		camera->setSnapMovement(snapMovement);
+		cameraCtrl_->setSnapMovement(snapMovement);
 		ImGui::Separator();
 
 		for (unsigned int i = 0; i < mapConfig.parent->children().size(); i++)
@@ -822,15 +820,16 @@ void MyEventHandler::onFrameStart()
 		}
 		ImGui::End();
 	}
+
+	cameraCtrl_->update(interval);
 }
 
 void MyEventHandler::onPostUpdate()
 {
 	if (drawOverlay)
 	{
-		CameraNode *camera = reinterpret_cast<CameraNode *>(mapConfig.parent);
 		for (unsigned int i = 0; i < mapModel.map().objectGroups.size(); i++)
-			MapFactory::drawObjectsWithImGui(*camera, mapModel, i);
+			MapFactory::drawObjectsWithImGui(cameraCtrl_->camera(), mapModel, i);
 	}
 }
 
@@ -853,37 +852,37 @@ void MyEventHandler::onKeyReleased(const nc::KeyboardEvent &event)
 
 void MyEventHandler::onTouchDown(const nc::TouchEvent &event)
 {
-	camera_->onTouchDown(event);
+	cameraCtrl_->onTouchDown(event);
 }
 
 void MyEventHandler::onTouchMove(const nc::TouchEvent &event)
 {
-	camera_->onTouchMove(event);
+	cameraCtrl_->onTouchMove(event);
 }
 
 void MyEventHandler::onPointerDown(const nc::TouchEvent &event)
 {
-	camera_->onPointerDown(event);
+	cameraCtrl_->onPointerDown(event);
 }
 
 void MyEventHandler::onMouseButtonPressed(const nc::MouseEvent &event)
 {
-	camera_->onMouseButtonPressed(event);
+	cameraCtrl_->onMouseButtonPressed(event);
 }
 
 void MyEventHandler::onMouseMoved(const nc::MouseState &state)
 {
-	camera_->onMouseMoved(state);
+	cameraCtrl_->onMouseMoved(state);
 }
 
 void MyEventHandler::onScrollInput(const nc::ScrollEvent &event)
 {
-	camera_->onScrollInput(event);
+	cameraCtrl_->onScrollInput(event);
 }
 
 void MyEventHandler::onJoyMappedAxisMoved(const nc::JoyMappedAxisEvent &event)
 {
-	camera_->onJoyMappedAxisMoved(event);
+	cameraCtrl_->onJoyMappedAxisMoved(event);
 }
 
 void MyEventHandler::onJoyMappedButtonReleased(const nc::JoyMappedButtonEvent &event)
@@ -905,10 +904,10 @@ void MyEventHandler::onJoyMappedButtonReleased(const nc::JoyMappedButtonEvent &e
 	else if (event.buttonName == nc::ButtonName::GUIDE)
 		nc::theApplication().quit();
 
-	camera_->onJoyMappedButtonReleased(event);
+	cameraCtrl_->onJoyMappedButtonReleased(event);
 }
 
 void MyEventHandler::onJoyDisconnected(const nc::JoyConnectionEvent &event)
 {
-	camera_->onJoyDisconnected(event);
+	cameraCtrl_->onJoyDisconnected(event);
 }
