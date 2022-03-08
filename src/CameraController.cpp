@@ -22,7 +22,10 @@ void CameraController::update(float interval)
 {
 	if (ignoreEvents_)
 	{
-		camera_.setView(viewValues_);
+		nc::Camera::ViewValues inverted = viewValues_;
+		inverted.position = -viewValues_.position;
+		inverted.rotation = -viewValues_.rotation;
+		camera_.setView(inverted);
 		return;
 	}
 
@@ -86,7 +89,10 @@ void CameraController::update(float interval)
 		viewValues_.position.y = roundf(viewValues_.position.y);
 	}
 
-	camera_.setView(viewValues_);
+	nc::Camera::ViewValues inverted = viewValues_;
+	inverted.position = -viewValues_.position;
+	inverted.rotation = -viewValues_.rotation;
+	camera_.setView(inverted);
 }
 
 void CameraController::reset()

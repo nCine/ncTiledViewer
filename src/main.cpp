@@ -461,10 +461,10 @@ void MyEventHandler::onFrameStart()
 			if (child->type() == nc::Object::ObjectType::MESH_SPRITE)
 			{
 				const nc::MeshSprite *meshSprite = static_cast<const nc::MeshSprite *>(child);
-				ImGui::Text("#%d - %s (%u vertices)", i, child->name().data(), meshSprite->numVertices());
+				ImGui::Text("#%d - %s (%u vertices)", i, child->name(), meshSprite->numVertices());
 			}
 			else
-				ImGui::Text("#%d - %s (%u children)", i, child->name().data(), child->children().size());
+				ImGui::Text("#%d - %s (%u children)", i, child->name(), child->children().size());
 			ImGui::Indent();
 			ImGui::PushID(child);
 			bool isEnabled = child->isEnabled();
