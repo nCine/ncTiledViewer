@@ -372,7 +372,7 @@ void MyEventHandler::onInit()
 #endif
 
 	cameraCtrl_ = nctl::makeUnique<CameraController>();
-	nc::theApplication().rootViewport().setCamera(&cameraCtrl_->camera());
+	nc::theApplication().screenViewport().setCamera(&cameraCtrl_->camera());
 	parent_ = nctl::makeUnique<nc::SceneNode>(&nc::theApplication().rootNode());
 	nc::theApplication().inputManager().setHandler(this);
 	mapConfig.textures = &textures_;
@@ -888,17 +888,11 @@ void MyEventHandler::onJoyMappedAxisMoved(const nc::JoyMappedAxisEvent &event)
 void MyEventHandler::onJoyMappedButtonReleased(const nc::JoyMappedButtonEvent &event)
 {
 	nc::Application::RenderingSettings &renderingSettings = nc::theApplication().renderingSettings();
-	nc::IDebugOverlay::DisplaySettings &overlaySettings = nc::theApplication().debugOverlaySettings();
 
 	if (event.buttonName == nc::ButtonName::A)
 		renderingSettings.batchingEnabled = !renderingSettings.batchingEnabled;
-	else if (event.buttonName == nc::ButtonName::Y)
+	else if (event.buttonName == nc::ButtonName::B)
 		renderingSettings.cullingEnabled = !renderingSettings.cullingEnabled;
-	else if (event.buttonName == nc::ButtonName::BACK)
-	{
-		overlaySettings.showProfilerGraphs = !overlaySettings.showProfilerGraphs;
-		overlaySettings.showInfoText = !overlaySettings.showInfoText;
-	}
 	else if (event.buttonName == nc::ButtonName::START)
 		showInterface = !showInterface;
 	else if (event.buttonName == nc::ButtonName::GUIDE)
