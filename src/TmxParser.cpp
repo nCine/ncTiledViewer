@@ -13,7 +13,6 @@ namespace {
 bool loadFile(const char *filename, nctl::UniquePtr<unsigned char[]> &fileBuffer, long int &fileSize)
 {
 	nctl::UniquePtr<nc::IFile> file = nc::IFile::createFileHandle(filename);
-	file->setExitOnFailToOpen(false);
 	file->open(nc::IFile::OpenMode::READ);
 	if (file->isOpened() == false)
 	{

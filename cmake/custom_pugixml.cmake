@@ -1,4 +1,4 @@
-set(PUGIXML_VERSION_TAG "v1.12.1")
+set(PUGIXML_VERSION_TAG "v1.13")
 # Download release archive (TRUE) or Git repository (FALSE)
 set(PUGIXML_DOWNLOAD_ARCHIVE TRUE)
 
