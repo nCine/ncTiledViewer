@@ -15,7 +15,7 @@ class CameraController :
   public:
 	CameraController();
 
-	void update(float interval);
+	void update(float frameTime);
 	void reset();
 
 	inline bool isIgnoringEvents() const { return ignoreEvents_; }

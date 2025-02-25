@@ -391,7 +391,7 @@ void MyEventHandler::onInit()
 
 void MyEventHandler::onFrameStart()
 {
-	const float interval = nc::theApplication().interval();
+	const float frameTime = nc::theApplication().frameTime();
 	const MapModel::Map &map = mapModel.map();
 
 	static nctl::String fileSelection(nc::fs::MaxPathLength);
@@ -424,7 +424,7 @@ void MyEventHandler::onFrameStart()
 		ImGui::Checkbox("VSync", &withVSync);
 		nc::theApplication().gfxDevice().setSwapInterval(withVSync ? 1 : 0);
 #endif
-		ImGui::Text("FPS: %.2f (%.2f ms)", 1.0f / interval, interval * 1000.0f);
+		ImGui::Text("FPS: %.2f (%.2f ms)", 1.0f / frameTime, frameTime * 1000.0f);
 		ImGui::Separator();
 
 		nc::Camera::ViewValues &viewValues = cameraCtrl_->viewValues();
@@ -821,7 +821,7 @@ void MyEventHandler::onFrameStart()
 		ImGui::End();
 	}
 
-	cameraCtrl_->update(interval);
+	cameraCtrl_->update(frameTime);
 }
 
 void MyEventHandler::onPostUpdate()

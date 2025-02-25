@@ -18,7 +18,7 @@ CameraController::CameraController()
 	joyVectorRight_ = nc::Vector2f::Zero;
 }
 
-void CameraController::update(float interval)
+void CameraController::update(float frameTime)
 {
 	if (ignoreEvents_)
 	{
@@ -31,33 +31,33 @@ void CameraController::update(float interval)
 
 	const nc::KeyboardState &keyState = nc::theApplication().inputManager().keyboardState();
 	if (keyState.isKeyDown(nc::KeySym::D))
-		viewValues_.position.x -= moveSpeed_ * interval;
+		viewValues_.position.x -= moveSpeed_ * frameTime;
 	else if (keyState.isKeyDown(nc::KeySym::A))
-		viewValues_.position.x += moveSpeed_ * interval;
+		viewValues_.position.x += moveSpeed_ * frameTime;
 	if (keyState.isKeyDown(nc::KeySym::W))
-		viewValues_.position.y -= moveSpeed_ * interval;
+		viewValues_.position.y -= moveSpeed_ * frameTime;
 	else if (keyState.isKeyDown(nc::KeySym::S))
-		viewValues_.position.y += moveSpeed_ * interval;
+		viewValues_.position.y += moveSpeed_ * frameTime;
 
 	if (keyState.isKeyDown(nc::KeySym::RIGHT))
-		viewValues_.rotation += rotateSpeed_ * interval;
+		viewValues_.rotation += rotateSpeed_ * frameTime;
 	else if (keyState.isKeyDown(nc::KeySym::LEFT))
-		viewValues_.rotation -= rotateSpeed_ * interval;
+		viewValues_.rotation -= rotateSpeed_ * frameTime;
 
 	if (keyState.isKeyDown(nc::KeySym::UP))
-		viewValues_.scale += scaleSpeed_ * interval;
+		viewValues_.scale += scaleSpeed_ * frameTime;
 	else if (keyState.isKeyDown(nc::KeySym::DOWN))
-		viewValues_.scale -= scaleSpeed_ * interval;
+		viewValues_.scale -= scaleSpeed_ * frameTime;
 
 	if (joyVectorLeft_.length() > nc::IInputManager::LeftStickDeadZone)
 	{
-		viewValues_.position.x -= joyVectorLeft_.x * moveSpeed_ * interval;
-		viewValues_.position.y -= joyVectorLeft_.y * moveSpeed_ * interval;
+		viewValues_.position.x -= joyVectorLeft_.x * moveSpeed_ * frameTime;
+		viewValues_.position.y -= joyVectorLeft_.y * moveSpeed_ * frameTime;
 	}
 	if (joyVectorRight_.length() > nc::IInputManager::RightStickDeadZone)
 	{
-		viewValues_.rotation += joyVectorRight_.x * rotateSpeed_ * interval;
-		viewValues_.scale += joyVectorRight_.y * scaleSpeed_ * interval;
+		viewValues_.rotation += joyVectorRight_.x * rotateSpeed_ * frameTime;
+		viewValues_.scale += joyVectorRight_.y * scaleSpeed_ * frameTime;
 	}
 
 	const nc::Vector2f scrollDiff = scrollMove_ - scrollOrigin_;
@@ -146,13 +146,13 @@ void CameraController::onMouseButtonPressed(const nc::MouseEvent &event)
 	if (ignoreEvents_)
 		return;
 
-	if (event.isLeftButton())
+	if (event.button == nc::MouseButton::LEFT)
 	{
 		scrollOrigin_.x = static_cast<float>(event.x);
 		scrollOrigin_.y = static_cast<float>(event.y);
 		scrollMove_ = scrollOrigin_;
 	}
-	else if (event.isRightButton())
+	else if (event.button == nc::MouseButton::RIGHT)
 	{
 		scrollOrigin2_.x = static_cast<float>(event.x);
 		scrollOrigin2_.y = static_cast<float>(event.y);
@@ -165,12 +165,12 @@ void CameraController::onMouseMoved(const nc::MouseState &state)
 	if (ignoreEvents_)
 		return;
 
-	if (state.isLeftButtonDown())
+	if (state.isButtonDown(nc::MouseButton::LEFT))
 	{
 		scrollMove_.x = static_cast<float>(state.x);
 		scrollMove_.y = static_cast<float>(state.y);
 	}
-	else if (state.isRightButtonDown())
+	else if (state.isButtonDown(nc::MouseButton::RIGHT))
 	{
 		scrollMove2_.x = static_cast<float>(state.x);
 		scrollMove2_.y = static_cast<float>(state.y);
