@@ -367,8 +367,10 @@ void MyEventHandler::onPreInit(nc::AppConfiguration &config)
 void MyEventHandler::onInit()
 {
 #ifdef __ANDROID__
-	ImGuiIO &io = ImGui::GetIO();
-	io.FontGlobalScale = 2.0f;
+	const float scalingFactor = nc::theApplication().gfxDevice().windowScalingFactor();
+	ImGuiStyle &style = ImGui::GetStyle();
+	style.FontScaleMain = scalingFactor;
+	style.ScaleAllSizes(scalingFactor);
 #endif
 
 	cameraCtrl_ = nctl::makeUnique<CameraController>();
