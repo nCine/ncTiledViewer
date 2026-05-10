@@ -335,7 +335,7 @@ bool loadMap(MapFactory::Configuration &mapConfig, MapModel &mapModel, const cha
 MapModel mapModel;
 MapFactory::Configuration mapConfig;
 bool showInterface = true;
-bool withVSync = true;
+bool vsync = true;
 bool drawOverlay = true;
 }
 
@@ -358,10 +358,10 @@ void MyEventHandler::onPreInit(nc::AppConfiguration &config)
 	#endif
 #endif
 
-	config.windowTitle = "ncTiledViewer";
-	config.windowIconFilename = "icon48.png";
-	config.consoleLogLevel = nc::ILogger::LogLevel::INFO;
-	withVSync = config.withVSync;
+	config.logging.consoleLevel = nc::ILogger::LogLevel::INFO;
+	config.window.title = "ncTiledViewer";
+	config.window.iconFilename = "icon48.png";
+	vsync = config.graphics.vsync;
 }
 
 void MyEventHandler::onInit()
@@ -423,8 +423,8 @@ void MyEventHandler::onFrameStart()
 #ifdef __ANDROID__
 		ImGui::Text("VSync: true");
 #else
-		ImGui::Checkbox("VSync", &withVSync);
-		nc::theApplication().gfxDevice().setSwapInterval(withVSync ? 1 : 0);
+		ImGui::Checkbox("VSync", &vsync);
+		nc::theApplication().gfxDevice().setSwapInterval(vsync ? 1 : 0);
 #endif
 		ImGui::Text("FPS: %.2f (%.2f ms)", 1.0f / frameTime, frameTime * 1000.0f);
 		ImGui::Separator();
