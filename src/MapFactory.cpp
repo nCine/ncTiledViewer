@@ -422,7 +422,7 @@ bool MapFactory::drawObjectsWithImGui(const nc::Camera &camera, const MapModel &
 			{
 				const ImVec2 min = transform(ImVec2(origin.x, origin.y), matrix);
 				const ImVec2 max = transform(ImVec2(origin.x + object.width, origin.y + object.height), matrix);
-				drawList->AddRect(min, max, color, 0.0f, ImDrawFlags_RoundCornersNone, thickness);
+				drawList->AddRect(min, max, color, 0.0f, thickness, ImDrawFlags_RoundCornersNone);
 			}
 			else
 			{
@@ -432,7 +432,7 @@ bool MapFactory::drawObjectsWithImGui(const nc::Camera &camera, const MapModel &
 				points[2] = transform(ImVec2(origin.x + object.width, origin.y + object.height), matrix);
 				points[3] = transform(ImVec2(origin.x, origin.y + object.height), matrix);
 
-				drawList->AddPolyline(points, 4, color, true, thickness);
+				drawList->AddPolyline(points, 4, color, thickness, ImDrawFlags_Closed);
 			}
 		}
 		else if (object.objectType == MapModel::ObjectType::Ellipse)
@@ -455,9 +455,9 @@ bool MapFactory::drawObjectsWithImGui(const nc::Camera &camera, const MapModel &
 				                             origin.y + object.points[i].y), matrix);
 			}
 
-			const bool closed = object.objectType == MapModel::ObjectType::Polygon;
+			const ImDrawFlags closedFlags = (object.objectType == MapModel::ObjectType::Polygon) ? ImDrawFlags_Closed : ImDrawFlags_None;
 			drawList->AddCircleFilled(points[0], thickness * 2.0f, color);
-			drawList->AddPolyline(points, object.points.size(), color, closed, thickness);
+			drawList->AddPolyline(points, object.points.size(), color, thickness, closedFlags);
 		}
 		else if (object.objectType == MapModel::ObjectType::Text && onlyTranslation)
 			drawList->AddText(transform(origin, matrix), object.text.color.abgr(), object.text.data);
